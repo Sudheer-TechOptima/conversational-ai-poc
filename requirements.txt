@@ -1,0 +1,10 @@
+streamlit>=1.45.0
+openai>=1.78.0
+python-dotenv>=1.1.0
+webrtcvad>=2.0.10
+sounddevice>=0.5.1
+numpy>=2.2.5
+soundfile>=0.13.1
+pyttsx3>=2.98
+plotly>=5.18.0
+vosk>=0.3.45

@@ -33,7 +33,7 @@ env/
 *.swo
 
 # Vosk model files (uncomment if you want to exclude them)
-# vosk-model*/
+vosk-model*/
 
 # Audio files
 *.wav
