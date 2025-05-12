@@ -26,6 +26,7 @@ class AudioHandler:
         self.speech_detected = False
         self.silence_detected = False
         self.last_vad_check = 0  # Track last VAD check time
+        self.continuous_mode = False
         self.init_audio_device()
 
     def init_audio_device(self):
@@ -161,13 +162,9 @@ class AudioHandler:
 
     def start_recording(self):
         """Start recording audio with automatic silence detection"""
+        self.reset()  # Ensure clean state
         self.is_recording = True
         self.stop_event.clear()
-        self.speech_buffer = []
-        self.audio_data = []
-        self.silence_start = None
-        self.has_speech = False
-        self.last_vad_check = 0
         
         def audio_processing_thread():
             try:
@@ -200,8 +197,9 @@ class AudioHandler:
 
     def stop_recording(self):
         """Stop recording and return processed audio if available"""
-        was_recording = self.is_recording or self.auto_stopped
+        was_recording = self.is_recording
         self.is_recording = False
+        self.stop_event.set()
         
         if self.audio_processor:
             self.audio_processor.join()
@@ -211,13 +209,10 @@ class AudioHandler:
             self.stream.stop()
             self.stream.close()
         
-        if not was_recording:
-            return None
-            
-        if self.has_speech and self.speech_buffer:
+        # Only process audio if we actually had speech
+        if was_recording and self.has_speech and self.speech_buffer:
             try:
                 audio_data = np.concatenate(self.speech_buffer)
-                self.auto_stopped = False
                 return audio_data
             except Exception as e:
                 print(f"Error concatenating audio: {e}")
@@ -225,8 +220,19 @@ class AudioHandler:
         return None
 
     def reset(self):
-        """Reset all audio handler states"""
-        self.stop_recording()
+        """Reset all audio handler states for next interaction"""
+        if hasattr(self, 'stream'):
+            try:
+                self.stream.stop()
+                self.stream.close()
+            except:
+                pass
+        
+        if self.audio_processor:
+            self.stop_event.set()
+            self.audio_processor.join()
+            self.audio_processor = None
+        
         self.audio_queue = Queue()
         self.speech_buffer = []
         self.audio_data = []
@@ -234,6 +240,7 @@ class AudioHandler:
         self.has_speech = False
         self.auto_stopped = False
         self.stop_event.clear()
+        self.is_recording = False
 
 class SpeechToText:
     def __init__(self):

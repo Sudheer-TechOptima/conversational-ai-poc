@@ -77,7 +77,10 @@ def process_audio_and_respond(audio_data, status_placeholder):
             except Exception as e:
                 print(f"TTS Error: {e}")
     
-    status_placeholder.markdown("⏸️ **Paused**")
+    # Automatically restart listening
+    status_placeholder.markdown("🎤 **Listening...**")
+    st.session_state.is_listening = True
+    st.session_state.audio_handler.start_recording()
 
 def main():
     st.set_page_config(page_title=config.TITLE, layout="wide")
