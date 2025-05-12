@@ -82,53 +82,22 @@ def process_audio_and_respond(audio_data, status_placeholder):
     st.session_state.is_listening = True
     st.session_state.audio_handler.start_recording()
 
+def convert_chat_to_text(conversation):
+    """Convert chat history to downloadable text format"""
+    chat_text = "Chat History\n\n"
+    for msg in conversation:
+        role = "You" if msg["role"] == "user" else "Assistant"
+        chat_text += f"{role}: {msg['content']}\n\n"
+    return chat_text
+
 def main():
     st.set_page_config(page_title=config.TITLE, layout="wide")
     
     # Initialize session state
     initialize_session_state()
-    
-    # Two-column layout for main content and settings
-    col_main, col_settings = st.columns([2, 1])
-    
-    with col_main:
-        st.title(config.TITLE)
-        st.markdown(config.DESCRIPTION)
-        
-        # Status indicator and controls
-        status_col, control_col = st.columns([3, 1])
-        with status_col:
-            status_placeholder = st.empty()
-            if st.session_state.is_listening:
-                status_placeholder.markdown("🎤 **Listening...**")
-            else:
-                status_placeholder.markdown("⏸️ **Paused**")
-        
-        with control_col:
-            if st.button("🎤 Start" if not st.session_state.is_listening else "⏹️ Stop"):
-                if not st.session_state.is_listening:
-                    # Starting recording
-                    st.session_state.is_listening = True
-                    st.session_state.audio_handler.start_recording()
-                    status_placeholder.markdown("🎤 **Listening...**")
-                else:
-                    # Manual stop
-                    st.session_state.is_listening = False
-                    audio_data = st.session_state.audio_handler.stop_recording()
-                    if audio_data is not None:
-                        process_audio_and_respond(audio_data, status_placeholder)
-                st.rerun()
 
-        # Chat history
-        st.markdown("### Conversation")
-        chat_container = st.container()
-        with chat_container:
-            for message in st.session_state.conversation:
-                with st.chat_message(message["role"]):
-                    st.write(message["content"])
-
-    # Settings sidebar
-    with col_settings:
+    # Settings in sidebar
+    with st.sidebar:
         st.markdown("### Settings")
         
         # API Key input
@@ -195,11 +164,59 @@ def main():
         if new_silence_threshold != config.SILENCE_THRESHOLD:
             config.SILENCE_THRESHOLD = new_silence_threshold
         
-        # Clear conversation button
-        if st.button("🗑️ Clear Conversation", type="secondary"):
-            st.session_state.conversation = []
-            st.session_state.chat.conversation_history = []
+        st.markdown("---")
+        # Download and Clear buttons side by side
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🗑️ Clear Chat"):
+                st.session_state.conversation = []
+                st.session_state.chat.conversation_history = []
+                st.rerun()
+        with col2:
+            if st.session_state.conversation:  # Only show download if there's chat content
+                chat_text = convert_chat_to_text(st.session_state.conversation)
+                st.download_button(
+                    label="💾 Download",
+                    data=chat_text,
+                    file_name="chat_history.txt",
+                    mime="text/plain"
+                )
+
+    # Main content area
+    st.title(config.TITLE)
+    st.markdown(config.DESCRIPTION)
+    
+    # Status indicator and controls
+    status_col, control_col = st.columns([3, 1])
+    with status_col:
+        status_placeholder = st.empty()
+        if st.session_state.is_listening:
+            status_placeholder.markdown("🎤 **Listening...**")
+        else:
+            status_placeholder.markdown("⏸️ **Paused**")
+    
+    with control_col:
+        if st.button("🎤 Start" if not st.session_state.is_listening else "⏹️ Stop"):
+            if not st.session_state.is_listening:
+                # Starting recording
+                st.session_state.is_listening = True
+                st.session_state.audio_handler.start_recording()
+                status_placeholder.markdown("🎤 **Listening...**")
+            else:
+                # Manual stop
+                st.session_state.is_listening = False
+                audio_data = st.session_state.audio_handler.stop_recording()
+                if audio_data is not None:
+                    process_audio_and_respond(audio_data, status_placeholder)
             st.rerun()
+
+    # Chat history
+    st.markdown("### Conversation")
+    chat_container = st.container()
+    with chat_container:
+        for message in st.session_state.conversation:
+            with st.chat_message(message["role"]):
+                st.write(message["content"])
     
     # Check VAD state and process audio if silence is detected
     if st.session_state.is_listening and st.session_state.audio_handler.check_vad_state():
