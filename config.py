@@ -9,12 +9,12 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 
 # Audio Configuration
 SAMPLE_RATE = 16000
-CHANNELS = 1
-CHUNK_SIZE = 480  # 30ms at 16kHz - optimal for VAD
-VAD_MODE = 3  # Aggressiveness mode (1-3)
-SILENCE_THRESHOLD = 0.3  # seconds (reduced for faster response)
-MAX_SILENCE = 0.8  # Maximum silence duration before stopping (reduced for faster response)
-MIN_SPEECH_DURATION = 0.3  # Minimum duration of speech to process
+CHANNELS = 1  # Ensure mono input
+CHUNK_SIZE = 1024
+VAD_MODE = 2  # Aggressiveness mode (1-3)
+SILENCE_THRESHOLD = 0.5  # seconds
+MAX_SILENCE = 1.5  # Maximum silence duration before stopping
+MIN_SPEECH_DURATION = 1.0  # Minimum duration of speech to process
 
 # Audio Device Configuration
 DEFAULT_INPUT_DEVICE = None

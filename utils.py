@@ -1,12 +1,13 @@
 import numpy as np
 import sounddevice as sd
 import webrtcvad
-from queue import Queue
+from queue import Queue, Empty
 from threading import Thread, Event
 import time
 import pyttsx3
 from openai import OpenAI
-from vosk import Model, KaldiRecognizer
+import torch
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 import json
 import config
 
@@ -121,6 +122,10 @@ class AudioHandler:
 
     def process_audio_chunk(self, audio_chunk):
         """Process audio chunk and detect speech/silence"""
+        # Convert to mono if stereo
+        if len(audio_chunk.shape) > 1 and audio_chunk.shape[1] > 1:
+            audio_chunk = np.mean(audio_chunk, axis=1)
+
         # Convert float32 audio to int16 for VAD
         audio_int16 = (audio_chunk * 32767).astype(np.int16)
         
@@ -183,7 +188,7 @@ class AudioHandler:
                         try:
                             audio_chunk = self.audio_queue.get(timeout=1.0)
                             self.process_audio_chunk(audio_chunk)
-                        except Queue.Empty:
+                        except Empty:
                             continue
                         except Exception as e:
                             print(f"Error processing audio chunk: {e}")
@@ -213,6 +218,9 @@ class AudioHandler:
         if was_recording and self.has_speech and self.speech_buffer:
             try:
                 audio_data = np.concatenate(self.speech_buffer)
+                # Ensure mono audio
+                if len(audio_data.shape) > 1 and audio_data.shape[1] > 1:
+                    audio_data = np.mean(audio_data, axis=1)
                 return audio_data
             except Exception as e:
                 print(f"Error concatenating audio: {e}")
@@ -244,55 +252,60 @@ class AudioHandler:
 
 class SpeechToText:
     def __init__(self):
-        import os.path
-        self.model_path = "vosk-model-small-en-us-0.15"
-        
-        # Check if model exists
-        if not os.path.exists(self.model_path):
-            raise RuntimeError(
-                f"Vosk model not found at {self.model_path}. "
-                "Please download the model from https://alphacephei.com/vosk/models "
-                "and extract it to the project directory."
-            )
-            
-        # Initialize Vosk model
+        # Initialize Whisper model
         try:
-            self.model = Model(model_path=self.model_path)
-            self._create_recognizer()
-            print("Successfully initialized Vosk model")
-        except Exception as e:
-            print(f"Error initializing Vosk model: {e}")
-            raise
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            self.torch_dtype = torch.float32
+
+            model_id = "openai/whisper-tiny.en"
             
-    def _create_recognizer(self):
-        """Create a fresh recognizer instance"""
-        self.recognizer = KaldiRecognizer(self.model, config.SAMPLE_RATE)
-        self.recognizer.SetWords(True)  # Enable word timing
-        
+            self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
+                model_id, torch_dtype=self.torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
+            )
+            self.model.to(self.device)
+
+            self.processor = AutoProcessor.from_pretrained(model_id)
+
+            self.pipe = pipeline(
+                "automatic-speech-recognition",
+                model=self.model,
+                tokenizer=self.processor.tokenizer,
+                feature_extractor=self.processor.feature_extractor,
+                max_new_tokens=128,
+                chunk_length_s=30,
+                batch_size=16,
+                return_timestamps=True,
+                torch_dtype=self.torch_dtype,
+                device=self.device,
+            )
+            print("Successfully initialized Whisper tiny model")
+        except Exception as e:
+            print(f"Error initializing Whisper model: {e}")
+            raise
+
     def transcribe(self, audio):
         if audio is None or len(audio) == 0:
             return ""
         
         try:
-            # Create a fresh recognizer for each transcription
-            self._create_recognizer()
+            # Ensure audio is float32 and in the correct range [-1, 1]
+            if audio.dtype != np.float32:
+                audio = audio.astype(np.float32)
             
-            # Convert float32 audio to int16 for Vosk
-            audio_int16 = (audio * 32767).astype(np.int16).tobytes()
+            # Convert to mono explicitly if needed
+            if len(audio.shape) > 1:
+                audio = np.mean(audio, axis=1)
             
-            # Process audio with Vosk
-            if self.recognizer.AcceptWaveform(audio_int16):
-                result = self.recognizer.Result()
-                text = json.loads(result)["text"]
-                return text.strip()
+            # Create a dict with the audio data and sampling rate
+            audio_dict = {
+                "array": audio,
+                "sampling_rate": config.SAMPLE_RATE
+            }
             
-            # Get partial result if no full result available
-            partial = self.recognizer.PartialResult()
-            if partial:
-                text = json.loads(partial)["partial"]
-                return text.strip()
-                
-            return ""
+            # Process audio with Whisper
+            result = self.pipe(audio_dict)
+            return result["text"].strip()
+            
         except Exception as e:
             print(f"Error in transcription: {e}")
             return ""
