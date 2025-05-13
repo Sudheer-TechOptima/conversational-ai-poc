@@ -1,6 +1,6 @@
 # Voice-to-Voice AI Chatbot
 
-An intelligent, real-time voice interaction system that enables natural conversations with AI using speech. This application combines lightweight speech processing with GPT-powered responses, delivering a seamless voice-based chat experience through an intuitive Streamlit interface.
+An intelligent, real-time voice interaction system that enables natural conversations with AI using speech. This application combines efficient speech processing with GPT-powered responses, delivering a seamless voice-based chat experience through an intuitive Streamlit interface.
 
 ## Project Overview
 
@@ -8,7 +8,7 @@ The Voice-to-Voice AI Chatbot creates natural, flowing conversations between use
 
 ### Core Pipeline
 1. **Voice Activity Detection (VAD)**: Uses WebRTC VAD for efficient speech detection
-2. **Speech-to-Text**: Employs Vosk for lightweight, offline speech recognition
+2. **Speech-to-Text**: Employs OpenAI's Whisper model for accurate speech recognition
 3. **AI Processing**: Leverages OpenAI's GPT models for intelligent responses
 4. **Text-to-Speech**: Utilizes pyttsx3 for local speech synthesis
 
@@ -19,10 +19,10 @@ The Voice-to-Voice AI Chatbot creates natural, flowing conversations between use
 - Continuous conversation flow
 - Low-latency response generation
 
-### Lightweight Processing
-- Local speech recognition using Vosk
-- Efficient voice activity detection
-- Minimal resource requirements
+### Advanced Speech Recognition
+- State-of-the-art Whisper model
+- Support for multiple languages
+- High accuracy transcription
 
 ### Customizable GPT Integration
 - Support for different GPT models
@@ -41,14 +41,14 @@ The application is built using Python and consists of several key components:
 
 ### Components
 - **AudioHandler**: Manages audio input and VAD
-- **SpeechToText**: Handles speech recognition using Vosk
+- **SpeechToText**: Handles speech recognition using Whisper
 - **ChatGPT**: Processes text through OpenAI's API
 - **TextToSpeech**: Manages speech synthesis
 - **Streamlit Interface**: Provides the user interface
 
 ### Data Flow
 1. Audio input → VAD processing
-2. Speech detection → Text conversion
+2. Speech detection → Whisper transcription
 3. Text → GPT processing
 4. Response → Speech synthesis
 5. Audio output to user
@@ -60,6 +60,7 @@ The application is built using Python and consists of several key components:
 - Microphone input device
 - Audio output capability
 - Internet connection (for GPT API)
+- CUDA-capable GPU (optional, for faster transcription)
 
 ## Installation
 
@@ -80,11 +81,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Download Vosk model:
-- Download the small English model from [Vosk Models](https://alphacephei.com/vosk/models)
-- Extract to `vosk-model-small-en-us-0.15` directory
-
-5. Set up OpenAI API key:
+4. Set up OpenAI API key:
 - Create a `.env` file
 - Add your API key: `OPENAI_API_KEY=your-api-key`
 
@@ -97,6 +94,7 @@ pip install -r requirements.txt
 - Speech Rate: Adjustable
 
 ### Model Settings
+- Whisper Model Selection (small.en)
 - GPT Model Selection
 - System Prompt Customization
 - Voice Detection Sensitivity
@@ -127,7 +125,7 @@ streamlit run app.py
 
 ## Known Limitations
 
-- Offline speech recognition limited to English
+- Requires internet connection for speech recognition
 - Basic text-to-speech quality
 - Requires consistent internet for GPT API
 - Audio processing dependent on system capabilities
@@ -135,14 +133,14 @@ streamlit run app.py
 ## Future Recommendations
 
 1. Enhanced Features
-- Multi-language support
+- Custom TTS voices
 - Advanced TTS with emotion
 - Custom wake word detection
 - Speech sentiment analysis
 - Voice style customization
 
 2. Technical Improvements
-- GPU acceleration support
+- Offline mode support
 - WebSocket implementation
 - Audio streaming optimization
 - Advanced noise reduction
@@ -161,7 +159,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgements
 
-- [Vosk](https://alphacephei.com/vosk/) for speech recognition
+- [OpenAI Whisper](https://github.com/openai/whisper) for speech recognition
 - [OpenAI](https://openai.com) for GPT integration
 - [Streamlit](https://streamlit.io) for the UI framework
 - [WebRTC VAD](https://github.com/wiseman/py-webrtcvad) for voice activity detection
