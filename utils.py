@@ -257,7 +257,7 @@ class SpeechToText:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.torch_dtype = torch.float32
 
-            model_id = "openai/whisper-tiny.en"
+            model_id = "openai/whisper-small.en"
             
             self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
                 model_id, torch_dtype=self.torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
