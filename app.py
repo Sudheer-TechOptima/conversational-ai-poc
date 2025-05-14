@@ -8,9 +8,11 @@ import config
 def initialize_session_state():
     if 'audio_handler' not in st.session_state:
         st.session_state.audio_handler = AudioHandler()
+    if 'selected_stt_model' not in st.session_state:
+        st.session_state.selected_stt_model = config.DEFAULT_STT_MODEL
     if 'stt' not in st.session_state:
         try:
-            st.session_state.stt = SpeechToText()
+            st.session_state.stt = SpeechToText(config.STT_MODELS[st.session_state.selected_stt_model])
         except RuntimeError as e:
             st.error(str(e))
             st.stop()
@@ -123,6 +125,16 @@ def main():
                                    help="Customize the chatbot's behavior")
         if system_prompt != config.DEFAULT_SYSTEM_PROMPT:
             config.DEFAULT_SYSTEM_PROMPT = system_prompt
+        
+        # STT model selection
+        st.markdown("#### Speech-to-Text Settings")
+        selected_stt_model = st.selectbox("STT Model", 
+                                          list(config.STT_MODELS.keys()), 
+                                          index=list(config.STT_MODELS.keys()).index(config.DEFAULT_STT_MODEL),
+                                          help="Select the Speech-to-Text model to use")
+        if selected_stt_model != st.session_state.selected_stt_model:
+            st.session_state.selected_stt_model = selected_stt_model
+            st.session_state.stt = SpeechToText(config.STT_MODELS[selected_stt_model])
         
         # Voice settings
         st.markdown("#### Voice Settings")

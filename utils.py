@@ -251,13 +251,11 @@ class AudioHandler:
         self.is_recording = False
 
 class SpeechToText:
-    def __init__(self):
+    def __init__(self, model_id="openai/whisper-small.en"):
         # Initialize Whisper model
         try:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.torch_dtype = torch.float32
-
-            model_id = "openai/whisper-small.en"
             
             self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
                 model_id, torch_dtype=self.torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
@@ -278,7 +276,7 @@ class SpeechToText:
                 torch_dtype=self.torch_dtype,
                 device=self.device,
             )
-            print("Successfully initialized Whisper tiny model")
+            print(f"Successfully initialized Whisper model: {model_id}")
         except Exception as e:
             print(f"Error initializing Whisper model: {e}")
             raise

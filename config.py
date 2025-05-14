@@ -7,6 +7,14 @@ load_dotenv()
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 
+# STT Configuration
+STT_MODELS = {
+    "Whisper Tiny": "openai/whisper-tiny.en",
+    "Whisper Small": "openai/whisper-small.en",
+    "Whisper Base": "openai/whisper-base.en"
+}
+DEFAULT_STT_MODEL = "Whisper Small"
+
 # Audio Configuration
 SAMPLE_RATE = 16000
 CHANNELS = 1  # Ensure mono input
